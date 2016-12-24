@@ -1,4 +1,4 @@
-package application
+package httpio
 
 type ValidationErrorResponse struct {
 	Errors map[string]string `json:"errors"`
@@ -6,4 +6,8 @@ type ValidationErrorResponse struct {
 
 type TokenResponse struct {
 	Token string `json:"token"`
+}
+
+type ErrorOutput struct {
+	Error string `json:"error"`
 }

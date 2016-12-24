@@ -1,8 +1,8 @@
-package application
+package generate
 
 import (
 	"butter/database"
-	"butter/service"
+	"butter/httpio/test"
 	"context"
 	"encoding/json"
 	"io/ioutil"
@@ -19,7 +19,7 @@ import (
 )
 
 func TestLoginRequestRecievesErrorResponseFromEmptyBody(t *testing.T) {
-	w, r := service.NewJsonPostRequest("/login", []byte(`{}`))
+	w, r := test.NewJsonPostRequest("/login", []byte(`{}`))
 
 	mock := new(database.MockORM)
 	app := &App{
@@ -37,7 +37,7 @@ func TestLoginRequestRecievesErrorResponseFromEmptyBody(t *testing.T) {
 func TestLoginRequestRecievesErrorResponseFromIncorrectEmail(t *testing.T) {
 	email := "hugorut@gmail.com"
 	password := "test"
-	w, r := service.NewJsonPostRequest("/login", []byte(`{"email":"`+email+`","password":"`+password+`"}`))
+	w, r := test.NewJsonPostRequest("/login", []byte(`{"email":"`+email+`","password":"`+password+`"}`))
 
 	mock := new(database.MockORM)
 	app := &App{
@@ -58,7 +58,7 @@ func TestLoginRequestRecievesErrorResponseFromIncorrectEmail(t *testing.T) {
 func TestLoginRequestRecievesErrorResponseFromIncorrectPassword(t *testing.T) {
 	email := "hugorut@gmail.com"
 	password := "test"
-	w, r := service.NewJsonPostRequest("/login", []byte(`{"email":"`+email+`","password":"`+password+`"}`))
+	w, r := test.NewJsonPostRequest("/login", []byte(`{"email":"`+email+`","password":"`+password+`"}`))
 
 	mock := &database.MockORMSetsUser{
 		new(database.MockORM),
@@ -91,7 +91,7 @@ func TestLoginRequestRecievesSuccessFromCorrectPassword(t *testing.T) {
 
 	email := "hugorut@gmail.com"
 	password := "test"
-	w, r := service.NewJsonPostRequest("/login", []byte(`{"email":"`+email+`","password":"`+password+`"}`))
+	w, r := test.NewJsonPostRequest("/login", []byte(`{"email":"`+email+`","password":"`+password+`"}`))
 
 	encrypt, _ := bcrypt.GenerateFromPassword([]byte(password), 0)
 	mock := &database.MockORMSetsUser{
@@ -138,7 +138,7 @@ func TestLoginRequestRecievesSuccessFromCorrectPassword(t *testing.T) {
 func TestRegisterRequestRecievesErrorResponseFromDifferentPasswordConfirmation(t *testing.T) {
 	email := "hugorut@gmail.com"
 	password := "thisisoversix"
-	w, r := service.NewJsonPostRequest("/register", []byte(`{"email":"`+email+`","password":"`+password+`", "passwordConfirmation":"`+password+`dd"}`))
+	w, r := test.NewJsonPostRequest("/register", []byte(`{"email":"`+email+`","password":"`+password+`", "passwordConfirmation":"`+password+`dd"}`))
 
 	mock := new(database.MockORM)
 
@@ -165,7 +165,7 @@ func TestRegisterRequestRecievesTokenFromCorrectPassword(t *testing.T) {
 
 	email := "hugorut@gmail.com"
 	password := "testisoversix"
-	w, r := service.NewJsonPostRequest("/register", []byte(`{"email":"`+email+`","password":"`+password+`", "passwordConfirmation":"`+password+`"}`))
+	w, r := test.NewJsonPostRequest("/register", []byte(`{"email":"`+email+`","password":"`+password+`", "passwordConfirmation":"`+password+`"}`))
 
 	encrypt, _ := bcrypt.GenerateFromPassword([]byte(password), 0)
 	mock := &database.MockORMCreatesUser{
@@ -212,7 +212,7 @@ func TestRegisterRequestRecievesTokenFromCorrectPassword(t *testing.T) {
 }
 
 func TestIdentifyRequestRecievesUserSetInContext(t *testing.T) {
-	w, r := service.NewGetRequest("/identify")
+	w, r := test.NewGetRequest("/identify")
 
 	user := database.User{
 		3,

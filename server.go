@@ -1,18 +1,13 @@
-package main
+package butter
 
 import (
-	"butter/application"
 	"butter/auth"
 	"butter/database"
-	"butter/routing"
-	"butter/service"
+	"butter/filesystem"
+	"butter/mail"
 	"butter/sys"
-	"log"
+	"fmt"
 	"net/http"
-	"os"
-
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/hugorut/gofile"
 
 	"github.com/joho/godotenv"
 
@@ -20,45 +15,42 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
-// global variables defined so as to facilitate testing and mocking
-var app *application.App
-var db database.ORM
-
-func main() {
-	log.Fatal(Serve(routes))
-}
-
-func Serve([]routing.ApplicationRoute) error {
+// Serve serves a butter application with http routing
+func Serve(routes []ApplicationRoute) (*App, error) {
 	// Load the environemnt configuration from the route .env file
 	godotenv.Load(".env")
 
-	// open the default gorm db connection
-	db, err := database.OpenGormDbConnection()
-	defer db.Close()
+	// boot up the logging
+	logger := sys.NewStdLogger()
 
+	// open the default mysql connection and wrap the connection with a GormORM
+	db, err := database.NewMySQLDBConnection()
 	// if there is a database issue then we shouldn't boot the app
 	if err != nil {
-		log.Fatalf("Could not establish database connection\n error met: %s", err.Error())
+		logger.Log(sys.FATAL, fmt.Sprintf("Could not establish database connection\n error met: %s", err.Error()))
 	}
 
-	// create the application with the defaults, an s3 filesystem and
-	// a mailgun mailer see docs for more configuration possibilities
-	app = &application.App{
-		DB: db,
-		FileSystem: gofile.NewS3FileSystem(
-			service.EnvOrDefault("S3_REGION", "eu-west-1"),
-			os.Getenv("S3_BUCKET"),
-			&credentials.EnvProvider{},
-		),
-		Mailer: sys.NewMailer(),
-		Time:   new(sys.OSTime),
-		Logger: new(sys.StdLogger),
+	orm, err := database.WrapSqlInGorm(db)
+	if err != nil {
+		logger.Log(sys.ERROR, err.Error())
 	}
 
-	// add routes to the application using the default gorilla mux default routing
-	// option, routins is secified in the routes.go file in the root of your application
-	router := routing.NewGorillaRouter().AddRoutes(routing.ApplyRoutes(app, routes, auth.Middled))
+	defer db.Close()
+
+	// create the application with the outputs of the env configuration
+	app := &App{
+		DB:         db,
+		ORM:        orm,
+		FileSystem: filesystem.NewFileSystem(),
+		Mailer:     mail.NewMailer(),
+		Time:       new(sys.OSTime),
+		Logger:     logger,
+	}
+
+	// add routes to the application using the specified routing option
+	// routes are specified in the routes.go file in the root of your application
+	router := NewGorillaRouter().AddRoutes(ApplyRoutes(app, routes, auth.Middled))
 
 	// create the server listening as default on 8082 but feel free to change in your .env
-	return http.ListenAndServe(service.EnvOrDefault("APP_PORT", ":8082"), router)
+	return app, http.ListenAndServe(sys.EnvOrDefault("APP_PORT", ":8082"), router)
 }

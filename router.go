@@ -1,7 +1,6 @@
-package routing
+package butter
 
 import (
-	"butter/application"
 	"butter/auth"
 	"net/http"
 
@@ -27,7 +26,7 @@ type ApplicationRoute struct {
 
 // ApplicationHandleFunc is a function that wraps a handler func with an
 // App context so that the handler can access the application core
-type ApplicationHandleFunc func(app *application.App) http.HandlerFunc
+type ApplicationHandleFunc func(app *App) http.HandlerFunc
 
 type Router interface {
 	Methods(...string) Routeable
@@ -90,14 +89,22 @@ func (r *GorillaRouting) HandlerFunc(f func(http.ResponseWriter, *http.Request))
 
 // ApplyRoutes returns a list of routes to apply to a router from a given slice of
 // application routes
-func ApplyRoutes(app *application.App, appRoutes []ApplicationRoute, middleFunc auth.MiddlewareCallable) Routes {
+func ApplyRoutes(app *App, appRoutes []ApplicationRoute, middleFunc auth.MiddlewareCallable) Routes {
 	var routes Routes
 
 	for _, route := range appRoutes {
+		var handler http.HandlerFunc
+		handler = route.Func(app)
+
+		// if there is middleware to apply lets do it here
+		if len(route.Middleware) > 0 {
+			handler = middleFunc(handler, route.Middleware...)
+		}
+
 		routes = append(routes, Route{
 			Method:      route.Method,
 			URI:         route.URI,
-			HandlerFunc: middleFunc(app.DB, route.Func(app), route.Middleware...),
+			HandlerFunc: handler,
 		})
 	}
 

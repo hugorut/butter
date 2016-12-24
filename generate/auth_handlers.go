@@ -1,6 +1,7 @@
-package application
+package generate
 
 import (
+	"butter/app"
 	"butter/auth"
 	"butter/database"
 	"encoding/json"
@@ -16,18 +17,18 @@ import (
 //   - password
 // This handler validates the request and checks the password if checks
 // pass then a jwt token is generated and passed back to the client
-func Login(app *App) http.HandlerFunc {
+func Login(app *app.App) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var loginRequest LoginRequest
 		err := json.NewDecoder(r.Body).Decode(&loginRequest)
 		if err != nil {
-			WriteValidationResponse(w, &ValidationErrorResponse{map[string]string{"json": "The request was in the incorrect format"}})
+			app.WriteValidationResponse(w, &ValidationErrorResponse{map[string]string{"json": "The request was in the incorrect format"}})
 			return
 		}
 
 		var user database.User
-		if loginRequest.Validate(app.DB, &user) == false {
-			WriteValidationResponse(w, &ValidationErrorResponse{loginRequest.GetErrors()})
+		if loginRequest.Validate(app.ORM, &user) == false {
+			app.WriteValidationResponse(w, &ValidationErrorResponse{loginRequest.GetErrors()})
 			return
 		}
 
@@ -46,13 +47,13 @@ func Register(app *App) http.HandlerFunc {
 		var registerRequest RegisterRequest
 		err := json.NewDecoder(r.Body).Decode(&registerRequest)
 		if err != nil {
-			WriteValidationResponse(w, &ValidationErrorResponse{map[string]string{"json": "The request was in the incorrect format"}})
+			app.WriteValidationResponse(w, &ValidationErrorResponse{map[string]string{"json": "The request was in the incorrect format"}})
 			return
 		}
 
 		var user database.User
-		if registerRequest.Validate(app.DB, &user) == false {
-			WriteValidationResponse(w, &ValidationErrorResponse{registerRequest.GetErrors()})
+		if registerRequest.Validate(app.ORM, &user) == false {
+			app.WriteValidationResponse(w, &ValidationErrorResponse{registerRequest.GetErrors()})
 			return
 		}
 
@@ -61,7 +62,7 @@ func Register(app *App) http.HandlerFunc {
 		user.Password = string(password)
 		user.CreatedAt = time.Now()
 
-		app.DB.Create(&user)
+		app.ORM.Create(&user)
 
 		gen := auth.JWTGenerator{auth.GetSecret()}
 		json.NewEncoder(w).Encode(TokenResponse{gen.GenerateToken(user)})

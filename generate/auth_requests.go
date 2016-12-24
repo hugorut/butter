@@ -1,4 +1,4 @@
-package application
+package generate
 
 import (
 	"butter/database"

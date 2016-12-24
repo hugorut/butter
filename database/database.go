@@ -1,7 +1,7 @@
 package database
 
 import (
-	"butter/service"
+	"butter/sys"
 	"database/sql"
 
 	"github.com/jinzhu/gorm"
@@ -51,6 +51,22 @@ type ORM interface {
 	Begin() ORM
 	Commit() ORM
 	Get(name string) (value interface{}, ok bool)
+}
+
+type DB interface {
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Prepare(query string) (*sql.Stmt, error)
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	QueryRow(query string, args ...interface{}) *sql.Row
+}
+
+type DbBeginner interface {
+	Begin() (*sql.Tx, error)
+}
+
+type Tx interface {
+	Commit() error
+	Rollback() error
 }
 
 type GormORM struct {
@@ -247,13 +263,19 @@ func (db *GormORM) Get(name string) (value interface{}, ok bool) {
 	return db.Gorm.Get(name)
 }
 
-func OpenGormDbConnection() (ORM, error) {
-	user := service.EnvOrDefault("MYSQL_USER", "root")
-	host := service.EnvOrDefault("MYSQL_HOST", "127.0.0.1")
-	port := service.EnvOrDefault("MYSQL_PORT", "3306")
-	database := service.EnvOrDefault("MYSQL_DATABASE", "butter")
-	password := service.EnvOrDefault("MYSQL_PASSWORD", "")
-
-	db, err := gorm.Open("mysql", user+":"+password+"@tcp("+host+":"+port+")/"+database+"?charset=utf8&parseTime=True&loc=Local")
+// WrapSqlInGorm returns a GormORM interface from an existing connection
+func WrapSqlInGorm(sqlConnection DB) (ORM, error) {
+	db, err := gorm.Open("mysql", sqlConnection)
 	return &GormORM{db}, err
+}
+
+// NewMySQLDBConnection returns a pointer to a mysql db
+func NewMySQLDBConnection() (*sql.DB, error) {
+	user := sys.EnvOrDefault("MYSQL_USER", "root")
+	host := sys.EnvOrDefault("MYSQL_HOST", "127.0.0.1")
+	port := sys.EnvOrDefault("MYSQL_PORT", "3306")
+	database := sys.EnvOrDefault("MYSQL_DATABASE", "butter")
+	password := sys.EnvOrDefault("MYSQL_PASSWORD", "")
+
+	return sql.Open("mysql", user+":"+password+"@tcp("+host+":"+port+")/"+database)
 }
