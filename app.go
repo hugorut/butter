@@ -1,7 +1,7 @@
 package butter
 
 import (
-	"butter/database"
+	"butter/data"
 	"butter/filesystem"
 	"butter/mail"
 	"butter/sys"
@@ -12,8 +12,9 @@ import (
 
 // App is a struct which holds the butter application entities
 type App struct {
-	DB         database.DB
-	ORM        database.ORM
+	DB         data.DB
+	ORM        data.ORM
+	Store      data.Store
 	FileSystem filesystem.FileSystem
 	Mailer     mail.Mailer
 	Time       sys.Time
@@ -31,7 +32,7 @@ func NewMockApplication() (*App, sqlmock.Sqlmock) {
 
 	app := &App{
 		DB:         db,
-		ORM:        new(database.MockORM),
+		ORM:        new(data.MockORM),
 		FileSystem: filesystem.NewMockFilesystem(),
 		Mailer:     mail.NewMockMailer(),
 		Time:       new(sys.MockTime),

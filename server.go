@@ -2,7 +2,7 @@ package butter
 
 import (
 	"butter/auth"
-	"butter/database"
+	"butter/data"
 	"butter/filesystem"
 	"butter/mail"
 	"butter/sys"
@@ -24,13 +24,13 @@ func Serve(routes []ApplicationRoute) (*App, error) {
 	logger := sys.NewStdLogger()
 
 	// open the default mysql connection and wrap the connection with a GormORM
-	db, err := database.NewMySQLDBConnection()
+	db, err := data.NewMySQLDBConnection()
 	// if there is a database issue then we shouldn't boot the app
 	if err != nil {
 		logger.Log(sys.FATAL, fmt.Sprintf("Could not establish database connection\n error met: %s", err.Error()))
 	}
 
-	orm, err := database.WrapSqlInGorm(db)
+	orm, err := data.WrapSqlInGorm(db)
 	if err != nil {
 		logger.Log(sys.ERROR, err.Error())
 	}
@@ -41,6 +41,7 @@ func Serve(routes []ApplicationRoute) (*App, error) {
 	app := &App{
 		DB:         db,
 		ORM:        orm,
+		Store: 	    data.NewRedisStore(),
 		FileSystem: filesystem.NewFileSystem(),
 		Mailer:     mail.NewMailer(),
 		Time:       new(sys.OSTime),

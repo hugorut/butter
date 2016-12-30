@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"butter/database"
+	"butter/data"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -13,9 +13,9 @@ import (
 
 func TestMiddleWareChainIsCalledCorrectly(t *testing.T) {
 	i := 1
-	db := new(database.MockORM)
+	db := new(data.MockORM)
 
-	middleWareOne := func(db database.ORM, next http.HandlerFunc) http.HandlerFunc {
+	middleWareOne := func(db data.ORM, next http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if i != 1 {
 				t.Errorf("Expected middleware func to be called at index [%i] instead was called at [%i]", 1, i)
@@ -27,7 +27,7 @@ func TestMiddleWareChainIsCalledCorrectly(t *testing.T) {
 		})
 	}
 
-	middleWareTwo := func(db database.ORM, next http.HandlerFunc) http.HandlerFunc {
+	middleWareTwo := func(db data.ORM, next http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if i != 2 {
 				t.Errorf("Expected middleware func to be called at index [%i] instead was called at [%i]", 2, i)
@@ -55,12 +55,12 @@ func TestMiddleWareChainIsCalledCorrectly(t *testing.T) {
 func TestJWTauthenticationMiddlewareSetsUser(t *testing.T) {
 	testSig := "test"
 
-	mockUser := database.User{}
+	mockUser := data.User{}
 	mockUser.ID = 1
 	mockUser.Email = "hugorut@gmail.com"
 
-	db := &database.MockORMSetsUser{
-		new(database.MockORM),
+	db := &data.MockORMSetsUser{
+		new(data.MockORM),
 		mockUser.Email,
 		"",
 		uint64(mockUser.ID),
