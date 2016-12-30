@@ -165,16 +165,15 @@ func Serialize(i interface{}) (string, error) {
 
 // DeSerialize attempts to hydrate a interface with a given string which
 // has been serialized via base64 encoding
-func DeSerialize(src []byte, output interface{}) error {
-	out := make([]byte, len(src))
-	_, err := base64.StdEncoding.Decode(src, out)
+func DeSerialize(src string, output interface{}) error {
+	out, err := base64.StdEncoding.DecodeString(src)
 
 	if err != nil {
 		return err
 	}
 
 	buffer := bytes.NewBuffer(out)
-	err = gob.NewDecoder(buffer).Decode(&output)
+	err = gob.NewDecoder(buffer).Decode(output)
 
 	return err
 }
