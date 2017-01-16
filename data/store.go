@@ -94,7 +94,7 @@ func NewRedisStore() *RedisStore {
 	}
 
 	return &RedisStore{
-		Pool: NewPool(sys.EnvOrDefault("REDIS_PORT", ":6379"), i),
+		Pool: NewPool(":"+sys.EnvOrDefault("REDIS_PORT", "6379"), i),
 	}
 }
 

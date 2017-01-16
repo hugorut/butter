@@ -54,6 +54,7 @@ type ORM interface {
 }
 
 type DB interface {
+	DbBeginner
 	Exec(query string, args ...interface{}) (sql.Result, error)
 	Prepare(query string) (*sql.Stmt, error)
 	Query(query string, args ...interface{}) (*sql.Rows, error)
@@ -277,5 +278,5 @@ func NewMySQLDBConnection() (*sql.DB, error) {
 	database := sys.EnvOrDefault("MYSQL_DATABASE", "butter")
 	password := sys.EnvOrDefault("MYSQL_PASSWORD", "")
 
-	return sql.Open("mysql", user+":"+password+"@tcp("+host+":"+port+")/"+database)
+	return sql.Open("mysql", user+":"+password+"@tcp("+host+":"+port+")/"+database+"?parseTime=true")
 }
