@@ -1,7 +1,7 @@
 package butter
 
 import (
-	"butter/auth"
+	"github.com/hugorut/butter/auth"
 	"net/http"
 
 	"github.com/gorilla/mux"

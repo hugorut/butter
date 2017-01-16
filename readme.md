@@ -18,8 +18,8 @@ You can get up and running with butter in no time at all.
 package main
 
 import (
-	"butter"
-	"butter/auth"
+	"github.com/hugorut/butter"
+	"github.com/hugorut/butter/auth"
 )
 
 var routes []butter.ApplicationRoute = []butter.ApplicationRoute{

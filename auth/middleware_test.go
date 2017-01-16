@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"butter/data"
+	"github.com/hugorut/butter/data"
 	"net/http"
 	"net/http/httptest"
 	"os"

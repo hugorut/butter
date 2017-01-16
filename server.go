@@ -1,11 +1,11 @@
 package butter
 
 import (
-	"butter/auth"
-	"butter/data"
-	"butter/filesystem"
-	"butter/mail"
-	"butter/sys"
+	"github.com/hugorut/butter/auth"
+	"github.com/hugorut/butter/data"
+	"github.com/hugorut/butter/filesystem"
+	"github.com/hugorut/butter/mail"
+	"github.com/hugorut/butter/sys"
 	"fmt"
 	"net/http"
 

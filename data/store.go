@@ -1,7 +1,7 @@
 package data
 
 import (
-	"butter/sys"
+	"github.com/hugorut/butter/sys"
 	"reflect"
 	"strconv"
 

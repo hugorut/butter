@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"butter/database"
+	"github.com/hugorut/butter/data"
 	"os"
 	"testing"
 

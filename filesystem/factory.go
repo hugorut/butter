@@ -1,7 +1,7 @@
 package filesystem
 
 import (
-	"butter/sys"
+	"github.com/hugorut/butter/sys"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
