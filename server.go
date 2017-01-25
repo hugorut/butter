@@ -1,13 +1,15 @@
 package butter
 
 import (
+	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/hugorut/butter/auth"
 	"github.com/hugorut/butter/data"
 	"github.com/hugorut/butter/filesystem"
 	"github.com/hugorut/butter/mail"
 	"github.com/hugorut/butter/sys"
-	"fmt"
-	"net/http"
 
 	"github.com/joho/godotenv"
 
@@ -16,7 +18,7 @@ import (
 )
 
 // Serve serves a butter application with http routing
-func Serve(routes []ApplicationRoute) (*App, error) {
+func Serve(routes []ApplicationRoute) (*App, chan error) {
 	// Load the environemnt configuration from the route .env file
 	godotenv.Load(".env")
 
@@ -41,7 +43,7 @@ func Serve(routes []ApplicationRoute) (*App, error) {
 	app := &App{
 		DB:         db,
 		ORM:        orm,
-		Store: 	    data.NewRedisStore(),
+		Store:      data.NewRedisStore(),
 		FileSystem: filesystem.NewFileSystem(),
 		Mailer:     mail.NewMailer(),
 		Time:       new(sys.OSTime),
@@ -52,6 +54,35 @@ func Serve(routes []ApplicationRoute) (*App, error) {
 	// routes are specified in the routes.go file in the root of your application
 	router := NewGorillaRouter().AddRoutes(ApplyRoutes(app, routes, auth.Middled))
 
+	// make a errors channel if to send the errors to if the http servers fail
+	errs := make(chan error)
+
+	if os.Getenv("APP_HTTPS") == "true" {
+		go func() {
+			app.Logger.Log(sys.INFO, fmt.Sprintf("starting the https service at port :%s", sys.EnvOrDefault("HTTPS_PORT", "5555")))
+			err := http.ListenAndServeTLS(
+				":"+sys.EnvOrDefault("HTTPS_PORT", "5555"),
+				sys.EnvOrDefault("CERT_FILE", "cert.crt"),
+				sys.EnvOrDefault("CERT_KEY", "cert.key"),
+				router,
+			)
+
+			if err != nil {
+				errs <- err
+			}
+		}()
+
+	}
+
+	go func() {
+		app.Logger.Log(sys.INFO, fmt.Sprintf("starting the http service at port :%s", sys.EnvOrDefault("APP_PORT", "8082")))
+		err := http.ListenAndServe(":"+sys.EnvOrDefault("APP_PORT", "8082"), router)
+
+		if err != nil {
+			errs <- err
+		}
+	}()
+
 	// create the server listening as default on 8082 but feel free to change in your .env
-	return app, http.ListenAndServe(sys.EnvOrDefault("APP_PORT", ":8082"), router)
+	return app, errs
 }
