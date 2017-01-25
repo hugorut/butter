@@ -27,7 +27,7 @@ func Serve(routes []ApplicationRoute) (*App, chan error) {
 
 	// open the default mysql connection and wrap the connection with a GormORM
 	db, err := data.NewMySQLDBConnection()
-	// if there is a database issue then we shouldn't boot the app
+
 	if err != nil {
 		logger.Log(sys.FATAL, fmt.Sprintf("Could not establish database connection\n error met: %s", err.Error()))
 	}
@@ -36,8 +36,6 @@ func Serve(routes []ApplicationRoute) (*App, chan error) {
 	if err != nil {
 		logger.Log(sys.ERROR, err.Error())
 	}
-
-	defer db.Close()
 
 	// create the application with the outputs of the env configuration
 	app := &App{
