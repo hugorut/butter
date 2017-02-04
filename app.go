@@ -1,11 +1,12 @@
 package butter
 
 import (
+	"os"
+
 	"github.com/hugorut/butter/data"
 	"github.com/hugorut/butter/filesystem"
 	"github.com/hugorut/butter/mail"
 	"github.com/hugorut/butter/sys"
-	"os"
 
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
@@ -23,7 +24,7 @@ type App struct {
 
 // GetAppHost return the app host
 func (a App) GetAppHost() string {
-	return os.Getenv("APP_URL") + os.Getenv("APP_PORT")
+	return os.Getenv("APP_URL") + ":" + os.Getenv("APP_PORT")
 }
 
 // NewMockApplication generates a new mock application for ease of testing

@@ -1,14 +1,17 @@
 package data
 
 import (
-	"github.com/hugorut/butter/sys"
 	"reflect"
 	"strconv"
+
+	"github.com/hugorut/butter/sys"
 
 	"bytes"
 	"encoding/base64"
 	"encoding/gob"
 	"errors"
+
+	"fmt"
 
 	"github.com/garyburd/redigo/redis"
 )
@@ -73,15 +76,18 @@ type RedisStore struct {
 
 // NewPool returns a redis client with a a max number of pool workers set
 func NewPool(port string, maxIdle int) *redis.Pool {
-	return redis.NewPool(func() (redis.Conn, error) {
-		c, err := redis.Dial("tcp", port)
+	return &redis.Pool{
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.Dial("tcp", port)
 
-		if err != nil {
-			return nil, err
-		}
+			if err != nil {
+				return nil, err
+			}
 
-		return c, err
-	}, maxIdle)
+			return c, err
+		},
+		MaxIdle: maxIdle,
+	}
 }
 
 // NewRedisStore returns a pointer to a RedisStore that uses env variables to define its connection
@@ -93,8 +99,13 @@ func NewRedisStore() *RedisStore {
 		i = 10
 	}
 
+	url := fmt.Sprintf("%s:%s",
+		sys.EnvOrDefault("REDIS_HOST", "localhost"),
+		sys.EnvOrDefault("REDIS_PORT", "6379"),
+	)
+
 	return &RedisStore{
-		Pool: NewPool(":"+sys.EnvOrDefault("REDIS_PORT", "6379"), i),
+		Pool: NewPool(url, i),
 	}
 }
 

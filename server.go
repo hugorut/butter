@@ -19,7 +19,7 @@ import (
 
 // Serve serves a butter application with http routing
 func Serve(routes []ApplicationRoute) (*App, chan error) {
-	// Load the environemnt configuration from the route .env file
+	// Load the environment configuration from the route .env file
 	godotenv.Load(".env")
 
 	// boot up the logging
