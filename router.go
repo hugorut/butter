@@ -6,10 +6,12 @@ import (
 
 	"github.com/hugorut/butter/auth"
 
-	"fmt"
-
 	"runtime"
 	"strings"
+
+	"fmt"
+
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/hugorut/butter/sys"
@@ -61,31 +63,35 @@ func (r *GorillaRouter) Methods(methods ...string) Routeable {
 // Serve http by defaulting to the gorilla implementation
 func (r *GorillaRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var err error
-	defer func() {
-		rec := recover()
-		if rec != nil {
-			switch t := rec.(type) {
-			case string:
-				err = errors.New(t)
-			case error:
-				err = t
-			default:
-				err = errors.New("Unknown error")
-			}
 
-			file, line := identifyPanic()
-			r.Logger.Log(
-				sys.CRITICAL,
-				fmt.Sprintf("Panic recovered from handler\nmethod: %s\nreq: %s\nname: %s\nline: %v\nerr: %s",
-					req.Method,
-					req.URL.Path,
-					file,
-					line,
-					err.Error()),
-			)
-			http.Error(w, "Woops, something wen't wrong", http.StatusInternalServerError)
-		}
-	}()
+	// gracefully recover by default
+	if os.Getenv("APP_GRACEFULL_RECOVER") != "false" {
+		defer func() {
+			rec := recover()
+			if rec != nil {
+				switch t := rec.(type) {
+				case string:
+					err = errors.New(t)
+				case error:
+					err = t
+				default:
+					err = errors.New("Unknown error")
+				}
+
+				file, line := identifyPanic()
+				r.Logger.Log(
+					sys.CRITICAL,
+					fmt.Sprintf("Panic recovered from handler\nmethod: %s\nreq: %s\nname: %s\nline: %v\nerr: %s",
+						req.Method,
+						req.URL.Path,
+						file,
+						line,
+						err.Error()),
+				)
+				http.Error(w, "Woops, something wen't wrong", http.StatusInternalServerError)
+			}
+		}()
+	}
 
 	r.Router.ServeHTTP(w, req)
 }
