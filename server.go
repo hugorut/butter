@@ -50,7 +50,7 @@ func Serve(routes []ApplicationRoute) (*App, chan error) {
 
 	// add routes to the application using the specified routing option
 	// routes are specified in the routes.go file in the root of your application
-	router := NewGorillaRouter().AddRoutes(ApplyRoutes(app, routes, auth.Middled))
+	router := NewGorillaRouter(logger).AddRoutes(ApplyRoutes(app, routes, auth.Middled))
 
 	// make a errors channel if to send the errors to if the http servers fail
 	errs := make(chan error)
