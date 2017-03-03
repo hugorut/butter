@@ -1,7 +1,6 @@
 package data
 
 import (
-	"reflect"
 	"strconv"
 
 	"github.com/hugorut/butter/sys"
@@ -12,6 +11,10 @@ import (
 	"errors"
 
 	"fmt"
+
+	"regexp"
+
+	"encoding/json"
 
 	"github.com/garyburd/redigo/redis"
 )
@@ -24,6 +27,7 @@ type Store interface {
 	Set(string, string) error
 	Get(string) (StoreValue, error)
 	Del(string) error
+	Keys(string) (StoreValue, error)
 }
 
 // StoreValue defines an interface for a value stored in the Store
@@ -37,6 +41,21 @@ type StoreValue interface {
 // testing
 type InMemoryStore struct {
 	Mem map[string]string
+}
+
+// Get the keys using a regular expression selection
+func (i *InMemoryStore) Keys(s string) (StoreValue, error) {
+	reg := regexp.MustCompile(s)
+	var keys []string
+
+	for k := range i.Mem {
+		if reg.MatchString(k) {
+			keys = append(keys, k)
+		}
+	}
+
+	b, _ := json.Marshal(keys)
+	return &InMemoryValue{string(b)}, nil
 }
 
 // Set adds a value to the map
@@ -133,6 +152,23 @@ func (r *RedisStore) Get(key string) (StoreValue, error) {
 	return value, err
 }
 
+// Get the keys from a string
+func (r *RedisStore) Keys(key string) (StoreValue, error) {
+	rep, err := r.Pool.Get().Do("KEYS", key)
+
+	value := &RedisStoreValue{rep}
+
+	if err != nil {
+		return value, err
+	}
+
+	if rep == nil {
+		return value, ErrorNoValue
+	}
+
+	return value, err
+}
+
 // Del deletes from a redis key
 func (r *RedisStore) Del(key string) error {
 	_, err := r.Pool.Get().Do("DEL", key)
@@ -146,13 +182,24 @@ type RedisStoreValue struct {
 
 // Value returns the bytes of the stored value at a specific key
 func (r *RedisStoreValue) Value() []byte {
-	v := reflect.ValueOf(r.Reply)
+	switch r.Reply.(type) {
+	case []byte:
+		return r.Reply.([]byte)
+	case []interface{}:
+		is := r.Reply.([]interface{})
+		var vals []string
+		for _, i := range is {
+			switch i.(type) {
+			case []byte:
+				vals = append(vals, string(i.([]byte)))
+			}
+		}
 
-	if r.Reply == nil {
-		return make([]byte, 0)
+		b, _ := json.Marshal(vals)
+		return b
 	}
 
-	return v.Bytes()
+	return make([]byte, 0)
 }
 
 func RegisterForSerialization(is ...interface{}) {
