@@ -16,6 +16,10 @@ import (
 
 	"encoding/json"
 
+	"time"
+
+	"os"
+
 	"github.com/garyburd/redigo/redis"
 )
 
@@ -24,7 +28,9 @@ var ErrorNoValue = errors.New("key used has nil value")
 // Store is an interface that defines a store that can be used for
 // key value based operations
 type Store interface {
+	ChangeExpiration(time.Duration) Store
 	Set(string, string) error
+	SetEx(string, time.Duration, string) error
 	Get(string) (StoreValue, error)
 	Del(string) error
 	Keys(string) (StoreValue, error)
@@ -41,6 +47,16 @@ type StoreValue interface {
 // testing
 type InMemoryStore struct {
 	Mem map[string]string
+}
+
+// ChangeExpiration is not supported in in memory store
+func (i *InMemoryStore) ChangeExpiration(exp time.Duration) Store {
+	return i
+}
+
+// SetEx defaults to Set as in memory store does not support expiring keys
+func (i *InMemoryStore) SetEx(key string, exp time.Duration, val string) error {
+	return i.Set(key, val)
 }
 
 // Get the keys using a regular expression selection
@@ -90,7 +106,9 @@ func (i *InMemoryValue) Value() []byte {
 
 // RedisStore
 type RedisStore struct {
-	Pool *redis.Pool
+	Pool        *redis.Pool
+	expires     time.Duration
+	neverExpire bool
 }
 
 // NewPool returns a redis client with a a max number of pool workers set
@@ -123,16 +141,48 @@ func NewRedisStore() *RedisStore {
 		sys.EnvOrDefault("REDIS_PORT", "6379"),
 	)
 
-	return &RedisStore{
-		Pool: NewPool(url, i),
+	d, err := time.ParseDuration(
+		sys.EnvOrDefault("REDIS_DEFAULT_EXPIRY", "86400s"),
+	)
+
+	if err != nil {
+		d, _ = time.ParseDuration("86400s")
 	}
+
+	var neverExpire bool
+	v := os.Getenv("REDIS_NEVER_EXPIRE")
+	if v != "" {
+		neverExpire = true
+	}
+
+	return &RedisStore{
+		Pool:        NewPool(url, i),
+		expires:     d,
+		neverExpire: neverExpire,
+	}
+}
+
+// ChangeExpiration changes the global expiration of the key for redis
+func (r *RedisStore) ChangeExpiration(expires time.Duration) Store {
+	r.expires = expires
+
+	return r
+}
+
+// Set stores a key for a given amount of time
+func (r *RedisStore) SetEx(key string, exp time.Duration, val string) error {
+	_, err := r.Pool.Get().Do("SETEX", key, int(exp.Seconds()), val)
+	return err
 }
 
 // Set adds a value to the redis store
 func (r *RedisStore) Set(key, val string) error {
-	_, err := r.Pool.Get().Do("SET", key, val)
+	if r.neverExpire {
+		_, err := r.Pool.Get().Do("SET", key, val)
+		return err
+	}
 
-	return err
+	return r.SetEx(key, r.expires, val)
 }
 
 // Get returns a value from the redis store
