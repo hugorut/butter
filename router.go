@@ -96,7 +96,7 @@ func (r *GorillaRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 					err = errors.New("Unknown error")
 				}
 
-				file, line := identifyPanic()
+				file, line := IdentifyPanic()
 				r.Logger.Log(
 					sys.CRITICAL,
 					fmt.Sprintf("Panic recovered from handler\nmethod: %s\nreq: %s\nname: %s\nline: %v\nerr: %s",
@@ -115,7 +115,7 @@ func (r *GorillaRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 // identify the line of the panic string
-func identifyPanic() (string, int) {
+func IdentifyPanic() (string, int) {
 	var name, file string
 	var line int
 	var pc [16]uintptr
@@ -187,7 +187,7 @@ func ApplyRoutes(app *App, appRoutes []ApplicationRoute, middleFunc auth.Middlew
 		handler = route.Func(app)
 
 		// if there is middleware to apply lets do it here
-		if len(route.Middleware) > 0 {
+		if route.Middleware != nil && len(route.Middleware) > 0 {
 			handler = middleFunc(handler, route.Middleware...)
 		}
 

@@ -45,3 +45,30 @@ func (s StdLogger) Log(level int, message string) {
 
 	log.Printf("[%s] ==> %s\n", s.Levels[level], message)
 }
+
+type TestLogger struct {
+	messages []struct {
+		level int
+		m     string
+	}
+}
+
+func (t *TestLogger) Log(level int, message string) {
+	t.messages = append(t.messages, struct {
+		level int
+		m     string
+	}{
+		level: level,
+		m:     message,
+	})
+}
+
+func (t *TestLogger) AssertCalled(level int, message string) bool {
+	for _, m := range t.messages {
+		if m.level == level && m.m == message {
+			return true
+		}
+	}
+
+	return false
+}
