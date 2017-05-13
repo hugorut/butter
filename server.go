@@ -3,6 +3,7 @@ package butter
 import (
 	"fmt"
 	"net/http"
+	"net/http/pprof"
 	"os"
 
 	"github.com/hugorut/butter/auth"
@@ -48,9 +49,20 @@ func Serve(routes []ApplicationRoute) (*App, chan error) {
 		Logger:     logger,
 	}
 
+	router := NewGorillaRouter(logger)
+
+	// if we wish to profile the application lets append the debug routes to the router
+	if os.Getenv("APP_PROFILE") == "true" {
+		routes = append(routes, debugRoutes...)
+		router.AddHandler("/debug/pprof/goroutine", pprof.Handler("goroutine"))
+		router.AddHandler("/debug/pprof/heap", pprof.Handler("heap"))
+		router.AddHandler("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
+		router.AddHandler("/debug/pprof/block", pprof.Handler("block"))
+	}
+
 	// add routes to the application using the specified routing option
 	// routes are specified in the routes.go file in the root of your application
-	router := NewGorillaRouter(logger).AddRoutes(ApplyRoutes(app, routes, auth.Middled))
+	router.AddRoutes(ApplyRoutes(app, routes, auth.Middled))
 
 	// make a errors channel if to send the errors to if the http servers fail
 	errs := make(chan error)

@@ -1,8 +1,6 @@
 package sys
 
-import (
-	"log"
-)
+import "log"
 
 const (
 	INFO = iota

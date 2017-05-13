@@ -3,6 +3,7 @@ package butter
 import (
 	"errors"
 	"net/http"
+	"net/http/pprof"
 
 	"github.com/hugorut/butter/auth"
 
@@ -16,6 +17,15 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/hugorut/butter/sys"
 )
+
+var debugRoutes []ApplicationRoute = []ApplicationRoute{
+	{Method: "GET", URI: "/debug/pprof/", Func: func(*App) http.HandlerFunc { return http.HandlerFunc(pprof.Index) }},
+	{Method: "GET", URI: "/debug/pprof/cmdline", Func: func(*App) http.HandlerFunc { return http.HandlerFunc(pprof.Cmdline) }},
+	{Method: "GET", URI: "/debug/pprof/profile", Func: func(*App) http.HandlerFunc { return http.HandlerFunc(pprof.Profile) }},
+	{Method: "GET", URI: "/debug/pprof/symbol", Func: func(*App) http.HandlerFunc { return http.HandlerFunc(pprof.Symbol) }},
+	{Method: "POST", URI: "/debug/pprof/symbol", Func: func(*App) http.HandlerFunc { return http.HandlerFunc(pprof.Symbol) }},
+	{Method: "GET", URI: "/debug/pprof/trace", Func: func(*App) http.HandlerFunc { return http.HandlerFunc(pprof.Trace) }},
+}
 
 // Route struct holds information about a specific endpoint
 type Route struct {
@@ -42,6 +52,7 @@ type Router interface {
 	Methods(...string) Routeable
 	ServeHTTP(http.ResponseWriter, *http.Request)
 	AddRoutes(routes Routes) Router
+	AddHandler(string, http.Handler) Router
 }
 
 type Routeable interface {
@@ -52,6 +63,13 @@ type Routeable interface {
 type GorillaRouter struct {
 	Router *mux.Router
 	Logger sys.Logger
+}
+
+// add a handler to the mux
+func (r *GorillaRouter) AddHandler(path string, handler http.Handler) Router {
+	r.Router.Handle(path, handler)
+
+	return r
 }
 
 // Sets the methods on the gorilla mux
