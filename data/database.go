@@ -1,8 +1,9 @@
 package data
 
 import (
-	"github.com/hugorut/butter/sys"
 	"database/sql"
+
+	"github.com/hugorut/butter/sys"
 
 	"github.com/jinzhu/gorm"
 )
@@ -99,15 +100,15 @@ func (db *GormORM) Not(query interface{}, args ...interface{}) ORM {
 }
 
 func (db *GormORM) Limit(limit interface{}) ORM {
-	return &GormORM{db.Gorm.Limit(limit)}
+	return &GormORM{db.Gorm.Limit(limit.(int))}
 }
 
 func (db *GormORM) Offset(offset interface{}) ORM {
-	return &GormORM{db.Gorm.Offset(offset)}
+	return &GormORM{db.Gorm.Offset(offset.(int))}
 }
 
 func (db *GormORM) Order(value interface{}, reorder ...bool) ORM {
-	return &GormORM{db.Gorm.Order(value, reorder...)}
+	return &GormORM{db.Gorm.Order(value.(string), reorder...)}
 }
 
 func (db *GormORM) Select(query interface{}, args ...interface{}) ORM {
