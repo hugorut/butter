@@ -18,6 +18,7 @@ import (
 	"github.com/hugorut/butter/sys"
 )
 
+// debug routes used for profiling the application
 var debugRoutes []ApplicationRoute = []ApplicationRoute{
 	{Method: "GET", URI: "/debug/pprof/", Func: func(*App) http.HandlerFunc { return http.HandlerFunc(pprof.Index) }},
 	{Method: "GET", URI: "/debug/pprof/cmdline", Func: func(*App) http.HandlerFunc { return http.HandlerFunc(pprof.Cmdline) }},
@@ -36,6 +37,7 @@ type Route struct {
 
 type Routes []Route
 
+// ApplicationRoute provides a struct to hold information for a entire route
 type ApplicationRoute struct {
 	Name       string
 	Method     string
@@ -48,6 +50,7 @@ type ApplicationRoute struct {
 // App context so that the handler can access the application core
 type ApplicationHandleFunc func(app *App) http.HandlerFunc
 
+// Router is a core struct which is responsible for serving routes for different http requests
 type Router interface {
 	Methods(...string) Routeable
 	ServeHTTP(http.ResponseWriter, *http.Request)
@@ -55,17 +58,19 @@ type Router interface {
 	AddHandler(string, http.Handler) Router
 }
 
+// Routeable defines an entity that is able to be routed
 type Routeable interface {
 	Path(string) Routeable
 	HandlerFunc(f func(http.ResponseWriter, *http.Request)) Routeable
 }
 
+// GorillaRouter provides a wrapper around the gorilla mux package
 type GorillaRouter struct {
 	Router *mux.Router
 	Logger sys.Logger
 }
 
-// add a handler to the mux
+// AddHandler adds a handler to the mux
 func (r *GorillaRouter) AddHandler(path string, handler http.Handler) Router {
 	r.Router.Handle(path, handler)
 
@@ -83,7 +88,7 @@ func (r *GorillaRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var err error
 
 	// gracefully recover by default
-	if os.Getenv("APP_GRACEFULL_RECOVER") != "false" {
+	if os.Getenv("APP_GRACEFUL_RECOVER") != "false" {
 		defer func() {
 			rec := recover()
 			if rec != nil {
@@ -114,7 +119,7 @@ func (r *GorillaRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.Router.ServeHTTP(w, req)
 }
 
-// identify the line of the panic string
+// IdentifyPanic identifies the line of the panic string
 func IdentifyPanic() (string, int) {
 	var name, file string
 	var line int
@@ -156,13 +161,13 @@ type GorillaRouting struct {
 	Route *mux.Route
 }
 
-// Sets a Path for the route within Gorilla Implementation.
+// Path sets a Path for the route within Gorilla Implementation.
 func (r *GorillaRouting) Path(tpl string) Routeable {
 	r.Route.Path(tpl)
 	return r
 }
 
-// return a pointer to a new gorilla router which is a wrapper
+// NewGorillaRouter return a pointer to a new gorilla router which is a wrapper
 // interface around the concrete mux implementation
 func NewGorillaRouter(logger sys.Logger) Router {
 	return &GorillaRouter{
@@ -171,14 +176,13 @@ func NewGorillaRouter(logger sys.Logger) Router {
 	}
 }
 
-// Sets a handler for the route within Gorilla Implementation.
+// HandlerFunc Sets a handler for the route within Gorilla Implementation.
 func (r *GorillaRouting) HandlerFunc(f func(http.ResponseWriter, *http.Request)) Routeable {
 	r.Route.HandlerFunc(f)
 	return r
 }
 
-// ApplyRoutes returns a list of routes to apply to a router from a given slice of
-// application routes
+// ApplyRoutes returns a list of routes to apply to a router from a given slice of application routes
 func ApplyRoutes(app *App, appRoutes []ApplicationRoute, middleFunc auth.MiddlewareCallable) Routes {
 	var routes Routes
 

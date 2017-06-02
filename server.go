@@ -53,11 +53,7 @@ func Serve(routes []ApplicationRoute) (*App, chan error) {
 
 	// if we wish to profile the application lets append the debug routes to the router
 	if os.Getenv("APP_PROFILE") == "true" {
-		routes = append(routes, debugRoutes...)
-		router.AddHandler("/debug/pprof/goroutine", pprof.Handler("goroutine"))
-		router.AddHandler("/debug/pprof/heap", pprof.Handler("heap"))
-		router.AddHandler("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
-		router.AddHandler("/debug/pprof/block", pprof.Handler("block"))
+		routes, router = addDebugRoutes(routes, router)
 	}
 
 	// add routes to the application using the specified routing option
@@ -95,4 +91,14 @@ func Serve(routes []ApplicationRoute) (*App, chan error) {
 
 	// create the server listening as default on 8082 but feel free to change in your .env
 	return app, errs
+}
+
+func addDebugRoutes(routes []ApplicationRoute, router Router) ([]ApplicationRoute, Router) {
+	routes = append(routes, debugRoutes...)
+	router.AddHandler("/debug/pprof/goroutine", pprof.Handler("goroutine"))
+	router.AddHandler("/debug/pprof/heap", pprof.Handler("heap"))
+	router.AddHandler("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
+	router.AddHandler("/debug/pprof/block", pprof.Handler("block"))
+
+	return routes, router
 }
