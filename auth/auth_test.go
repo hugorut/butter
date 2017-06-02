@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"github.com/hugorut/butter/data"
 	"os"
 	"testing"
 
@@ -9,8 +8,7 @@ import (
 )
 
 func TestGenerateReturnsClaimsWithUserId(t *testing.T) {
-	var user database.User
-	user.ID = 1
+	id := 1
 
 	prior_token := os.Getenv("JWT_SECRET")
 	defer func() {
@@ -23,13 +21,13 @@ func TestGenerateReturnsClaimsWithUserId(t *testing.T) {
 		GetSecret(),
 	}
 
-	str := gen.GenerateToken(user)
+	str := gen.GenerateToken(id)
 	token, _ := jwt.Parse(str, func(token *jwt.Token) (interface{}, error) {
 		return []byte(secret), nil
 	})
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		if claims["sub"] != float64(user.ID) {
+		if claims["sub"] != float64(id) {
 			t.Errorf("User id not set correctly for JWT \n expected: 1 \n got: %s", claims["sub"])
 		}
 	} else {

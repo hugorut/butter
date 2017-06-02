@@ -1,11 +1,9 @@
 package auth
 
 import (
-	"github.com/hugorut/butter/data"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"reflect"
 	"testing"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -13,9 +11,8 @@ import (
 
 func TestMiddleWareChainIsCalledCorrectly(t *testing.T) {
 	i := 1
-	db := new(data.MockORM)
 
-	middleWareOne := func(db data.ORM, next http.HandlerFunc) http.HandlerFunc {
+	middleWareOne := func(next http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if i != 1 {
 				t.Errorf("Expected middleware func to be called at index [%i] instead was called at [%i]", 1, i)
@@ -27,7 +24,7 @@ func TestMiddleWareChainIsCalledCorrectly(t *testing.T) {
 		})
 	}
 
-	middleWareTwo := func(db data.ORM, next http.HandlerFunc) http.HandlerFunc {
+	middleWareTwo := func(next http.HandlerFunc) http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if i != 2 {
 				t.Errorf("Expected middleware func to be called at index [%i] instead was called at [%i]", 2, i)
@@ -45,7 +42,7 @@ func TestMiddleWareChainIsCalledCorrectly(t *testing.T) {
 		}
 	}
 
-	middled := Middled(db, handler, middleWareOne, middleWareTwo)
+	middled := Middled(handler, middleWareOne, middleWareTwo)
 
 	rr := httptest.NewRecorder()
 	r, _ := http.NewRequest("GET", "/", nil)
@@ -55,19 +52,10 @@ func TestMiddleWareChainIsCalledCorrectly(t *testing.T) {
 func TestJWTauthenticationMiddlewareSetsUser(t *testing.T) {
 	testSig := "test"
 
-	mockUser := data.User{}
-	mockUser.ID = 1
-	mockUser.Email = "hugorut@gmail.com"
-
-	db := &data.MockORMSetsUser{
-		new(data.MockORM),
-		mockUser.Email,
-		"",
-		uint64(mockUser.ID),
-	}
+	sub := 1
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": mockUser.ID,
+		"sub": sub,
 	})
 
 	os.Setenv("JWT_SECRET", testSig)
@@ -83,15 +71,13 @@ func TestJWTauthenticationMiddlewareSetsUser(t *testing.T) {
 	r.Header.Set("Authorization", "Bearer "+tokenString)
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		returnedUser := r.Context().Value("user")
-		ps := reflect.ValueOf(returnedUser)
-		id := ps.FieldByName("ID").Interface()
+		id := r.Context().Value("sub")
 
-		if id != mockUser.ID {
-			t.Errorf("Returned user is not equal to one expected: %s \n got: %s", id, mockUser.ID)
+		if id != float64(sub) {
+			t.Errorf("Returned user is not equal to one expected: %s \n got: %s", id, sub)
 		}
 	}
 
-	middled := Middled(db, handler, JWTProtected)
+	middled := Middled(handler, JWTProtected)
 	middled(rr, r)
 }
