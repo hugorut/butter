@@ -43,10 +43,17 @@ type StoreValue interface {
 	Value() []byte
 }
 
-// in memory store in order to facilitate simple
-// testing
+// InMemoryStore provides a struct that implements the Store Interface which writes to a map
+// this can be used facilitate simple testing or simple interactions within small applications
 type InMemoryStore struct {
 	Mem map[string]string
+}
+
+// NewInMemoryStore provides a construction function for the memory store
+func NewInMemoryStore() *InMemoryStore {
+	return &InMemoryStore{
+		Mem: make(map[string]string),
+	}
 }
 
 // ChangeExpiration is not supported in in memory store
@@ -83,7 +90,13 @@ func (i *InMemoryStore) Set(key, val string) error {
 
 // Get returns a value from the map using a key
 func (i *InMemoryStore) Get(key string) (StoreValue, error) {
-	return &InMemoryValue{i.Mem[key]}, nil
+	var err error
+
+	if _, ok := i.Mem[key]; !ok {
+		err = ErrorNoValue
+	}
+
+	return &InMemoryValue{i.Mem[key]}, err
 }
 
 // Del deletes from the map
@@ -95,6 +108,7 @@ func (i *InMemoryStore) Del(key string) error {
 	return nil
 }
 
+// InMemoryValue is a struct that satisfies
 type InMemoryValue struct {
 	Val string
 }
@@ -112,10 +126,10 @@ type RedisStore struct {
 }
 
 // NewPool returns a redis client with a a max number of pool workers set
-func NewPool(port string, maxIdle int) *redis.Pool {
+func NewPool(url string, maxIdle int) *redis.Pool {
 	return &redis.Pool{
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", port)
+			c, err := redis.Dial("tcp", url)
 
 			if err != nil {
 				return nil, err
@@ -151,7 +165,7 @@ func NewRedisStore() *RedisStore {
 
 	var neverExpire bool
 	v := os.Getenv("REDIS_NEVER_EXPIRE")
-	if v != "" {
+	if v != "" && v != "false" {
 		neverExpire = true
 	}
 
@@ -202,7 +216,7 @@ func (r *RedisStore) Get(key string) (StoreValue, error) {
 	return value, err
 }
 
-// Get the keys from a string
+// Keys returns all the keys matching the given string
 func (r *RedisStore) Keys(key string) (StoreValue, error) {
 	rep, err := r.Pool.Get().Do("KEYS", key)
 
@@ -226,17 +240,18 @@ func (r *RedisStore) Del(key string) error {
 	return err
 }
 
+// ReidsStoreValue is a struct that is in charge of returning a redis reply to bytes
 type RedisStoreValue struct {
-	Reply interface{}
+	reply interface{}
 }
 
 // Value returns the bytes of the stored value at a specific key
 func (r *RedisStoreValue) Value() []byte {
-	switch r.Reply.(type) {
+	switch r.reply.(type) {
 	case []byte:
-		return r.Reply.([]byte)
+		return r.reply.([]byte)
 	case []interface{}:
-		is := r.Reply.([]interface{})
+		is := r.reply.([]interface{})
 		var vals []string
 		for _, i := range is {
 			switch i.(type) {
@@ -252,6 +267,7 @@ func (r *RedisStoreValue) Value() []byte {
 	return make([]byte, 0)
 }
 
+// RegisterForSerialization registers a number of interface in readiness for serialization
 func RegisterForSerialization(is ...interface{}) {
 	for _, i := range is {
 		gob.Register(i)
