@@ -13,7 +13,7 @@ type Mailer interface {
 	SetFrom(string) Mailer
 }
 
-// Message holds the simple mesage to send
+// Message holds the simple message to send
 type Message struct {
 	Subject string
 	Html    string
