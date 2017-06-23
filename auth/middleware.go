@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/hugorut/butter/sys"
 )
 
 // Middleware defines a fuction that applies logic to a handler func and
@@ -29,7 +30,7 @@ func SkipMiddleware(final http.HandlerFunc, chain ...Middleware) http.HandlerFun
 	return final
 }
 
-// wrap a given handler func with a chain of Middleware
+// Middled wraps a given handler func with a chain of Middleware
 func Middled(final http.HandlerFunc, chain ...Middleware) http.HandlerFunc {
 	handled := chain[len(chain)-1](final)
 
@@ -40,16 +41,26 @@ func Middled(final http.HandlerFunc, chain ...Middleware) http.HandlerFunc {
 	return handled
 }
 
-// remove access control origin from requests, allow options and requests
+// CrossOrigin remove access control origin from requests, allow options and requests
 // this should be removed or modified fro production
 func CrossOrigin(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers",
-			"Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Requested-With")
+		origin := sys.EnvOrDefault("Allow_Origin", "*")
 
-		// Stop here if its Preflighted OPTIONS request
+		w.Header().Set(
+			"Access-Control-Allow-Origin",
+			origin,
+		)
+		w.Header().Set(
+			"Access-Control-Allow-Methods",
+			"POST, GET, OPTIONS, PUT, DELETE",
+		)
+		w.Header().Set(
+			"Access-Control-Allow-Headers",
+			"Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Requested-With",
+		)
+
+		// Stop here if its pre-flight OPTIONS request
 		if r.Method == "OPTIONS" {
 			return
 		}
@@ -58,9 +69,8 @@ func CrossOrigin(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-// protect a route with via a web token, if a valid token is passed then
-// we decode the token and set the given entity within the context of the
-// request.
+// JWTProtected protects a route via a web token, if a valid token is passed then
+// we decode the token and set the given entity within the context of the request.
 func JWTProtected(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Read the token out of the request header
