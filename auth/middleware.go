@@ -10,68 +10,42 @@ import (
 	"strings"
 
 	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/hugorut/butter/sys"
+	"github.com/hugorut/butter"
 )
-
-// Middleware defines a fuction that applies logic to a handler func and
-// passes the request to the next Middleware
-type Middleware func(http.HandlerFunc) http.HandlerFunc
-
-// Chain is an slice of Middleware
-type Chain []Middleware
-
-// MiddlewareCallable calls a chain of Middleware creating a nested tree of functions
-type MiddlewareCallable func(final http.HandlerFunc, chain ...Middleware) http.HandlerFunc
 
 var ErrorJWTAuthError = errors.New("Authentication failed")
 
-// SkipMiddleware skips all Middleware functions so that a route chain can be tested
-func SkipMiddleware(final http.HandlerFunc, chain ...Middleware) http.HandlerFunc {
-	return final
+// TokenGenerator interface which returns a token to use as an apikey in
+// the header of a request.
+type TokenGenerator interface {
+	GenerateToken(id int) string
 }
 
-// Middled wraps a given handler func with a chain of Middleware
-func Middled(final http.HandlerFunc, chain ...Middleware) http.HandlerFunc {
-	handled := chain[len(chain)-1](final)
-
-	for i := len(chain) - 2; i >= 0; i-- {
-		handled = chain[i](handled)
-	}
-
-	return handled
+// JWTGenerator is the json web token implementation of a TokenGenerator
+type JWTGenerator struct {
+	Secret []byte
 }
 
-// CrossOrigin remove access control origin from requests, allow options and requests
-// this should be removed or modified fro production
-func CrossOrigin(next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		origin := sys.EnvOrDefault("Allow_Origin", "*")
-
-		w.Header().Set(
-			"Access-Control-Allow-Origin",
-			origin,
-		)
-		w.Header().Set(
-			"Access-Control-Allow-Methods",
-			"POST, GET, OPTIONS, PUT, DELETE",
-		)
-		w.Header().Set(
-			"Access-Control-Allow-Headers",
-			"Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Requested-With",
-		)
-
-		// Stop here if its pre-flight OPTIONS request
-		if r.Method == "OPTIONS" {
-			return
-		}
-
-		next(w, r)
+// GenerateToken generates a jwt token from a valid user object
+// adds custom claims to the token with the ID of the entity
+// that is is making the request.
+func (g *JWTGenerator) GenerateToken(id int) string {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": id,
 	})
+
+	tokenString, _ := token.SignedString(g.Secret)
+	return tokenString
+}
+
+// GetSecret returns jwt signing secret from an environment variable
+func GetSecret() []byte {
+	return []byte(os.Getenv("JWT_SECRET"))
 }
 
 // JWTProtected protects a route via a web token, if a valid token is passed then
 // we decode the token and set the given entity within the context of the request.
-func JWTProtected(next http.HandlerFunc) http.HandlerFunc {
+func JWTProtected(next http.HandlerFunc, app *butter.App) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Read the token out of the request header
 		head := r.Header.Get("Authorization")

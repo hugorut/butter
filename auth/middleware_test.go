@@ -7,46 +7,35 @@ import (
 	"testing"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/hugorut/butter"
 )
 
-func TestMiddleWareChainIsCalledCorrectly(t *testing.T) {
-	i := 1
+func TestGenerateReturnsClaimsWithUserId(t *testing.T) {
+	id := 1
 
-	middleWareOne := func(next http.HandlerFunc) http.HandlerFunc {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if i != 1 {
-				t.Errorf("Expected middleware func to be called at index [%i] instead was called at [%i]", 1, i)
-			}
+	prior_token := os.Getenv("JWT_SECRET")
+	defer func() {
+		os.Setenv("JWT_SECRET", prior_token)
+	}()
+	secret := "secdfldjslafjdsaf8s7fd7asd89f9a7fdsret"
+	os.Setenv("JWT_SECRET", secret)
 
-			i += 1
-
-			next(w, r)
-		})
+	gen := JWTGenerator{
+		GetSecret(),
 	}
 
-	middleWareTwo := func(next http.HandlerFunc) http.HandlerFunc {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if i != 2 {
-				t.Errorf("Expected middleware func to be called at index [%i] instead was called at [%i]", 2, i)
-			}
+	str := gen.GenerateToken(id)
+	token, _ := jwt.Parse(str, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secret), nil
+	})
 
-			i += 1
-
-			next(w, r)
-		})
-	}
-
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		if i != 3 {
-			t.Errorf("Expected middleware func to be called at index [%i] instead was called at [%i]", 3, i)
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		if claims["sub"] != float64(id) {
+			t.Errorf("User id not set correctly for JWT \n expected: 1 \n got: %s", claims["sub"])
 		}
+	} else {
+		t.Error("Token is not valid")
 	}
-
-	middled := Middled(handler, middleWareOne, middleWareTwo)
-
-	rr := httptest.NewRecorder()
-	r, _ := http.NewRequest("GET", "/", nil)
-	middled(rr, r)
 }
 
 func TestJWTauthenticationMiddlewareSetsUser(t *testing.T) {
@@ -78,6 +67,6 @@ func TestJWTauthenticationMiddlewareSetsUser(t *testing.T) {
 		}
 	}
 
-	middled := Middled(handler, JWTProtected)
+	middled := butter.Middled(handler, &butter.App{}, JWTProtected)
 	middled(rr, r)
 }

@@ -1,4 +1,4 @@
-#FileSytem
+# FileSytem
 Butter provides a consistent and simple interface to deal with differing file systems. It provides great flexibility and allows you to easily mock out and unit test file interactions.
 
 Currently Butter supports interactions with the core *OS* and *Amazon S3* file systems, with the *Google Cloud* application in development.
@@ -71,7 +71,7 @@ filesys := filesystem.NewOSFileSystem()
 file, err := filesys.Get("my/path/to-file.txt")
 ```
 
-###Examples
+### Examples
 
 Here's a quick example of how easy it is to work with filesystem. The example below outlines a implementation of a http handler which uploads an image to s3 from a request which holds a base64 encoded image.
 
@@ -133,7 +133,7 @@ func errorResponse(w http.ResponseWriter, err error) {
 }
 ```
 
-###Testing
+### Testing
 
 Gofile was built with testing in mind and provides a `MockFileSystem` to facilitate ease of testing. Access to the mock filesystem is given through the conventional construct function
 

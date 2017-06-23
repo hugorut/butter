@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/hugorut/butter/sys"
-	"github.com/hugorut/butter/auth"
 )
 
 func TestGorillaRouter_AddRoutes_RegistersRoutesForRequest(t *testing.T) {
@@ -73,19 +72,19 @@ func TestApplyRoutes_TranslatesApplicationRoutes_ToRoutes(t *testing.T) {
 
 	routes := []ApplicationRoute{
 		{
-			Name: "test",
+			Name:   "test",
 			Method: "GET",
-			URI: "/test/uri",
-			Func: func (*App) http.HandlerFunc {
+			URI:    "/test/uri",
+			Func: func(*App) http.HandlerFunc {
 				calledApplicationRoute = true
-				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					calledBaseRoute = true
 				})
 			},
 		},
 	}
 
-	actual := ApplyRoutes(app, routes, auth.SkipMiddleware)
+	actual := ApplyRoutes(app, routes, SkipMiddleware)
 
 	route := actual[0]
 	if route.URI != "/test/uri" {
@@ -105,7 +104,7 @@ func TestApplyRoutes_TranslatesApplicationRoutes_ToRoutes(t *testing.T) {
 
 	route.HandlerFunc(res, req)
 
-	if ! calledBaseRoute {
+	if !calledBaseRoute {
 		t.Error("Failed asserting that the correct base handler func called")
 	}
 
