@@ -18,11 +18,31 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
-// Serve serves a butter application with http routing
+// Env stores key value pairing
+type Env struct {
+	Key   string
+	Value string
+}
+
+// Serve the butter application with manual env
+func ServeWithEnv(routes []ApplicationRoute, env []Env) (*App, chan error) {
+	for _, e := range env {
+		os.Setenv(e.Key, e.Value)
+	}
+
+	return serve(routes)
+}
+
+// Serve serves a butter application with the given http routes
 func Serve(routes []ApplicationRoute) (*App, chan error) {
 	// Load the environment configuration from the route .env file
 	godotenv.Load(".env")
 
+	return serve(routes)
+}
+
+// Serve serves a butter application with the given http routes
+func serve(routes []ApplicationRoute) (*App, chan error) {
 	// boot up the logging
 	logger := sys.NewStdLogger()
 
