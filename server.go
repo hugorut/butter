@@ -13,14 +13,23 @@ import (
 
 	"github.com/joho/godotenv"
 
+	"crypto/tls"
+
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 // Env stores key value pairing
 type Env struct {
 	Key   string
 	Value string
+}
+
+var certManager = autocert.Manager{
+	Prompt:     autocert.AcceptTOS,
+	HostPolicy: autocert.HostWhitelist(os.Getenv("HTTPS_WHITELIST")),
+	Cache:      autocert.DirCache("certs"),
 }
 
 // Serve the butter application with manual env
@@ -85,12 +94,14 @@ func serve(routes []ApplicationRoute) (*App, chan error) {
 	if os.Getenv("APP_HTTPS") == "true" {
 		go func() {
 			app.Logger.Log(sys.INFO, fmt.Sprintf("starting the https service at port :%s", sys.EnvOrDefault("HTTPS_PORT", "5555")))
-			err := http.ListenAndServeTLS(
-				":"+sys.EnvOrDefault("HTTPS_PORT", "5555"),
-				sys.EnvOrDefault("CERT_FILE", "cert.crt"),
-				sys.EnvOrDefault("CERT_KEY", "cert.key"),
-				router,
-			)
+			server := &http.Server{
+				Addr: sys.EnvOrDefault("HTTPS_PORT", "5555"),
+				TLSConfig: &tls.Config{
+					GetCertificate: certManager.GetCertificate,
+				},
+			}
+
+			err := server.ListenAndServeTLS("", "")
 
 			if err != nil {
 				errs <- err

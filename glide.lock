@@ -1,8 +1,8 @@
-hash: 0939384031ef74ab8739d7c5d31edfc6bdcb2826323ff2771563ebdd2477bfa6
-updated: 2017-06-02T13:08:24.57353902+01:00
+hash: 5dbbd1ff5b3977287fd6cb3ea04e73997dd58beb12959d48a63e3ffdc951bd9c
+updated: 2017-07-17T17:59:56.323963218+01:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: f9a14dadf426ac17058f5ed3ec9bac9a61b5990b
+  version: b73b028e599fa9176687c70b8f9cafbe57c27d20
   subpackages:
   - aws
   - aws/awserr
@@ -76,6 +76,8 @@ imports:
 - name: golang.org/x/crypto
   version: e1a4589e7d3ea14a3352255d04b6f1a418845e5e
   subpackages:
+  - acme
+  - acme/autocert
   - bcrypt
 - name: gopkg.in/DATA-DOG/go-sqlmock.v1
   version: b983233bc0bbea4dc6e8ec8c8c923d935765ffec
@@ -84,3 +86,5 @@ imports:
 testImports:
 - name: github.com/alicebob/miniredis
   version: 995ba133bd8fe5dae5a34732bd99f558b0b60e1a
+  subpackages:
+  - server
