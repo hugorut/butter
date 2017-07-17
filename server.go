@@ -26,12 +26,6 @@ type Env struct {
 	Value string
 }
 
-var certManager = autocert.Manager{
-	Prompt:     autocert.AcceptTOS,
-	HostPolicy: autocert.HostWhitelist(os.Getenv("HTTPS_WHITELIST")),
-	Cache:      autocert.DirCache("certs"),
-}
-
 // Serve the butter application with manual env
 func ServeWithEnv(routes []ApplicationRoute, env []Env) (*App, chan error) {
 	for _, e := range env {
@@ -51,6 +45,12 @@ func Serve(routes []ApplicationRoute) (*App, chan error) {
 
 // Serve serves a butter application with the given http routes
 func serve(routes []ApplicationRoute) (*App, chan error) {
+	certManager := autocert.Manager{
+		Prompt:     autocert.AcceptTOS,
+		HostPolicy: autocert.HostWhitelist(os.Getenv("HTTPS_WHITELIST")),
+		Cache:      autocert.DirCache("certs"),
+	}
+
 	// boot up the logging
 	logger := sys.NewStdLogger()
 
