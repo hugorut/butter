@@ -95,7 +95,7 @@ func serve(routes []ApplicationRoute) (*App, chan error) {
 		go func() {
 			app.Logger.Log(sys.INFO, fmt.Sprintf("starting the https service at port :%s", sys.EnvOrDefault("HTTPS_PORT", "5555")))
 			server := &http.Server{
-				Addr: sys.EnvOrDefault("HTTPS_PORT", "5555"),
+				Addr: ":" + sys.EnvOrDefault("HTTPS_PORT", "5555"),
 				TLSConfig: &tls.Config{
 					GetCertificate: certManager.GetCertificate,
 				},
