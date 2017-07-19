@@ -99,6 +99,7 @@ func serve(routes []ApplicationRoute) (*App, chan error) {
 				TLSConfig: &tls.Config{
 					GetCertificate: certManager.GetCertificate,
 				},
+				Handler: router,
 			}
 
 			err := server.ListenAndServeTLS("", "")
