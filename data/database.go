@@ -279,5 +279,5 @@ func NewMySQLDBConnection() (*sql.DB, error) {
 	database := sys.EnvOrDefault("MYSQL_DATABASE", "butter")
 	password := sys.EnvOrDefault("MYSQL_PASSWORD", "")
 
-	return sql.Open("mysql", user+":"+password+"@tcp("+host+":"+port+")/"+database+"?parseTime=true")
+	return sql.Open("mysql", user+":"+password+"@tcp("+host+":"+port+")/"+database+"?parseTime=true&multiStatements=true")
 }
