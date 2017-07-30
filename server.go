@@ -36,9 +36,14 @@ func ServeWithEnv(routes []ApplicationRoute, env []Env) (*App, chan error) {
 }
 
 // Serve serves a butter application with the given http routes
-func Serve(routes []ApplicationRoute) (*App, chan error) {
-	// Load the environment configuration from the route .env file
-	godotenv.Load(".env")
+func Serve(routes []ApplicationRoute, files ...string) (*App, chan error) {
+	if len(files) == 0 {
+		godotenv.Load(".env")
+	}
+
+	for _, f := range files {
+		godotenv.Load(f)
+	}
 
 	return serve(routes)
 }
