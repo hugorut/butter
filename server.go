@@ -2,6 +2,7 @@ package butter
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -42,7 +43,11 @@ func Serve(routes []ApplicationRoute, files ...string) (*App, chan error) {
 	}
 
 	for _, f := range files {
-		godotenv.Load(f)
+		err := godotenv.Load(f)
+
+		if err != nil {
+			log.Printf("Could not load file %s, err: %v", f, err)
+		}
 	}
 
 	return serve(routes)
