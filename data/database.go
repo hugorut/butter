@@ -5,6 +5,10 @@ import (
 
 	"github.com/hugorut/butter/sys"
 
+	"fmt"
+
+	"time"
+
 	"github.com/jinzhu/gorm"
 )
 
@@ -279,5 +283,28 @@ func NewMySQLDBConnection() (*sql.DB, error) {
 	database := sys.EnvOrDefault("MYSQL_DATABASE", "butter")
 	password := sys.EnvOrDefault("MYSQL_PASSWORD", "")
 
-	return sql.Open("mysql", user+":"+password+"@tcp("+host+":"+port+")/"+database+"?parseTime=true&multiStatements=true")
+	var db *sql.DB
+	var err error
+
+	url := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&multiStatements=true", user, password, host, port, database)
+	db, err = sql.Open("mysql", url)
+
+	var i int
+	for {
+		err = db.Ping()
+
+		if err == nil {
+			return db, err
+		}
+
+		if i > 5 {
+			return db, err
+		}
+
+		time.Sleep(time.Second)
+		db, err = sql.Open("mysql", url)
+		i++
+	}
+
+	return db, err
 }
