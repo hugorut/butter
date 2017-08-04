@@ -101,7 +101,7 @@ func (r *GorillaRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 				file, line := IdentifyPanic()
 				r.Logger.Log(
-					sys.FATAL,
+					sys.ERROR,
 					fmt.Sprintf("Panic recovered from handler\nmethod: %s\nreq: %s\nname: %s\nline: %v\nerr: %s",
 						req.Method,
 						req.URL.Path,
