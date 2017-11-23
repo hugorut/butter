@@ -64,6 +64,17 @@ func main() {
 
 ## Configuration
 Butter uses environment variables to give you the power to customise your butter application.
-Butter uses `godotenv` to load environment variables from your `.env` file at the root of your project so that.
 
+Butter uses `godotenv` to load environment variables from your `.env` file at the root of your project so that you can compose your application at run time. 
+
+Want to switch out a filesystem, just configure the `.env` file and swap out providers. Butter's interfaces remain consistent.  
+
+## Components
+
+Butter comes with a set of components accessible via the `App`. These are:
+* [Filesystem]()
+* [Key|Value Store]()
+* [Database]()
+* [Mail]()
+* [Logging]()
 
