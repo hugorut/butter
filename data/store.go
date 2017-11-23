@@ -127,11 +127,22 @@ type RedisStore struct {
 
 // NewPool returns a redis client with a a max number of pool workers set
 func NewPool(url string, maxIdle int) *redis.Pool {
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+
 	return &redis.Pool{
 		Dial: func() (redis.Conn, error) {
 			c, err := redis.Dial("tcp", url)
 
 			if err != nil {
+				return nil, err
+			}
+
+			if	redisPassword == "" {
+				return c, err
+			}
+
+			if _, err := c.Do("AUTH", redisPassword); err != nil {
+				c.Close()
 				return nil, err
 			}
 
