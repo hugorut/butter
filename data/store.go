@@ -126,7 +126,7 @@ type RedisStore struct {
 }
 
 // NewPool returns a redis client with a a max number of pool workers set
-func NewPool(url string, maxIdle, maxActive int) *redis.Pool {
+func NewPool(url string, maxIdle, maxActive, idleSecs int) *redis.Pool {
 	redisPassword := os.Getenv("REDIS_PASSWORD")
 
 	return &redis.Pool{
@@ -150,6 +150,7 @@ func NewPool(url string, maxIdle, maxActive int) *redis.Pool {
 		},
 		MaxIdle: maxIdle,
 		MaxActive: maxActive,
+		IdleTimeout: time.Duration(idleSecs) * time.Second,
 	}
 }
 
@@ -166,6 +167,12 @@ func NewRedisStore() *RedisStore {
 	x, err := strconv.Atoi(maxActive)
 	if err != nil {
 		x = 1200
+	}
+
+	idleSecs := sys.EnvOrDefault("REDIS_KEEP_IDLE", "30")
+	s, err := strconv.Atoi(idleSecs)
+	if err != nil {
+		s = 30
 	}
 
 	url := fmt.Sprintf("%s:%s",
@@ -188,7 +195,7 @@ func NewRedisStore() *RedisStore {
 	}
 
 	return &RedisStore{
-		Pool:        NewPool(url, i, x),
+		Pool:        NewPool(url, i, x, s),
 		expires:     d,
 		neverExpire: neverExpire,
 	}
