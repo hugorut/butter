@@ -210,16 +210,23 @@ func (r *RedisStore) ChangeExpiration(expires time.Duration) Store {
 
 // Set stores a key for a given amount of time
 func (r *RedisStore) SetEx(key string, exp time.Duration, val string) error {
-	_, err := r.Pool.Get().Do("SETEX", key, int(exp.Seconds()), val)
-	return err
+	conn := r.Pool.Get()
+	if _, err := conn.Do("SETEX", key, int(exp.Seconds()), val); err != nil {
+		return err
+	}
+
+	return conn.Close()
 }
 
 // Set adds a value to the redis store
 func (r *RedisStore) Set(key, val string) error {
 	if r.neverExpire {
-		_, err := r.Pool.Get().Do("SET", key, val)
+		conn := r.Pool.Get()
+		if _, err := conn.Do("SET", key, val); err != nil {
+			return err
+		}
 
-		return err
+		return conn.Close()
 	}
 
 	return r.SetEx(key, r.expires, val)
@@ -227,7 +234,8 @@ func (r *RedisStore) Set(key, val string) error {
 
 // Get returns a value from the redis store
 func (r *RedisStore) Get(key string) (StoreValue, error) {
-	rep, err := r.Pool.Get().Do("GET", key)
+	conn := r.Pool.Get()
+	rep, err := conn.Do("GET", key)
 
 	value := &RedisStoreValue{rep}
 
@@ -235,6 +243,7 @@ func (r *RedisStore) Get(key string) (StoreValue, error) {
 		return value, err
 	}
 
+	err = conn.Close()
 	if rep == nil {
 		return value, ErrorNoValue
 	}
@@ -244,7 +253,8 @@ func (r *RedisStore) Get(key string) (StoreValue, error) {
 
 // Keys returns all the keys matching the given string
 func (r *RedisStore) Keys(key string) (StoreValue, error) {
-	rep, err := r.Pool.Get().Do("KEYS", key)
+	conn := r.Pool.Get()
+	rep, err := conn.Do("KEYS", key)
 
 	value := &RedisStoreValue{rep}
 
@@ -252,6 +262,7 @@ func (r *RedisStore) Keys(key string) (StoreValue, error) {
 		return value, err
 	}
 
+	err = conn.Close()
 	if rep == nil {
 		return value, ErrorNoValue
 	}
@@ -261,9 +272,12 @@ func (r *RedisStore) Keys(key string) (StoreValue, error) {
 
 // Del deletes from a redis key
 func (r *RedisStore) Del(key string) error {
-	_, err := r.Pool.Get().Do("DEL", key)
+	conn := r.Pool.Get()
+	if _, err := conn.Do("DEL", key); err != nil {
+		return err
+	}
 
-	return err
+	return conn.Close()
 }
 
 // ReidsStoreValue is a struct that is in charge of returning a redis reply to bytes
