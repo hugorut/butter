@@ -17,9 +17,10 @@ type MailgunMessageSender interface {
 
 // SetFrom sets the value of the mailer from
 func (m *MailgunMailer) SetFrom(from string) Mailer {
-	m.from = from
-
-	return m
+	return &MailgunMailer{
+		mg:m.mg,
+		from: from,
+	}
 }
 
 // Send provides a method to quickly send a message via the mailgun API
